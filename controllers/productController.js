@@ -76,31 +76,43 @@ exports.checkout = async (req, res) => {
   try {
     const { username, salecode: input } = req.body;
 
+    console.log('Checkout attempt:', { username, input });
+
+    if (!username || !input || typeof username !== 'string' || typeof input !== 'string') {
+      return sendError(res, "Invalid input data: username and salecode are required strings", 400);
+    }
+
     // Extract productCode and quantity
-    const parts = (input || '').split('=');
+    const parts = input.split('=');
     const productCode = parts[0].trim();
     const quantity = parts[1] ? parseInt(parts[1], 10) : 1;
 
-    if (!username || !productCode || isNaN(quantity) || quantity <= 0) {
-      return sendError(res, "Invalid input data", 400);
+    if (!productCode || isNaN(quantity) || quantity <= 0) {
+      return sendError(res, "Invalid salecode format. Expected 'CODE' or 'CODE=QUANTITY'", 400);
     }
+
+    console.log('Processing order for:', { productCode, quantity });
 
     // Search product in MongoDB
     const product = await Product.findOne({ salecode: productCode });
 
     // If not found
     if (!product) {
+      console.log('Product not found:', productCode);
       return sendError(res, "Product not found", 404);
     }
 
     // If stock is low
     if (product.quantity < quantity) {
+      console.log('Insufficient stock:', { available: product.quantity, requested: quantity });
       return sendError(res, "Insufficient stock", 400);
     }
 
     // Update stock
     const totalPrice = product.price * quantity;
     product.quantity -= quantity;
+    
+    console.log('Updating product stock...');
     await product.save();
 
     // Save the Order
@@ -112,10 +124,14 @@ exports.checkout = async (req, res) => {
       totalPrice,
       status: 'pending'
     });
+    
+    console.log('Saving new order...');
     await newOrder.save();
 
+    console.log('Order completed successfully:', newOrder._id);
     return sendSuccess(res, newOrder, "Order success", 201);
   } catch (err) {
+    console.error('Checkout error:', err);
     return sendError(res, err.message, 500);
   }
 };
