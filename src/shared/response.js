@@ -5,7 +5,7 @@
  * @param {string} message - Success message
  * @param {number} statusCode - HTTP status code
  */
-const sendSuccess = (res, data, message = "Success", statusCode = 200) => {
+export const sendSuccess = (res, data, message = "Success", statusCode = 200) => {
   return res.status(statusCode).json({
     success: true,
     message,
@@ -20,7 +20,7 @@ const sendSuccess = (res, data, message = "Success", statusCode = 200) => {
  * @param {number} statusCode - HTTP status code
  * @param {any} error - Detailed error information
  */
-const sendError = (res, message = "Error", statusCode = 500, error = null) => {
+export const sendError = (res, message = "Error", statusCode = 500, error = null) => {
   return res.status(statusCode).json({
     success: false,
     message,
@@ -28,7 +28,7 @@ const sendError = (res, message = "Error", statusCode = 500, error = null) => {
   });
 };
 
-module.exports = {
+export default {
   sendSuccess,
   sendError
 };

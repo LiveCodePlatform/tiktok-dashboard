@@ -1,9 +1,9 @@
-const Product = require('../models/Product');
-const Order = require('../models/Order');
-const { sendSuccess, sendError } = require('../utils/response');
+import Product from '../models/product.model.js';
+import Order from '../models/order.model.js';
+import { sendSuccess, sendError } from '../shared/response.js';
 
 // POST /api/products: Add a new product
-exports.createProduct = async (req, res) => {
+export const createProduct = async (req, res) => {
   try {
     const product = new Product(req.body);
     await product.save();
@@ -14,7 +14,7 @@ exports.createProduct = async (req, res) => {
 };
 
 // GET /api/products: List all products
-exports.getProducts = async (req, res) => {
+export const getProducts = async (req, res) => {
   try {
     const products = await Product.find();
     return sendSuccess(res, products);
@@ -24,7 +24,7 @@ exports.getProducts = async (req, res) => {
 };
 
 // GET /api/order/:salecode: Find product by salecode and check stock
-exports.checkOrder = async (req, res) => {
+export const checkOrder = async (req, res) => {
   try {
     const { salecode } = req.params;
     const product = await Product.findOne({ salecode });
@@ -44,7 +44,7 @@ exports.checkOrder = async (req, res) => {
 };
 
 // POST /api/check-message: Classify if message is a salecode or general text
-exports.classifyMessage = async (req, res) => {
+export const classifyMessage = async (req, res) => {
   try {
     const { conversation } = req.body;
     
@@ -72,11 +72,11 @@ exports.classifyMessage = async (req, res) => {
 };
 
 // POST /api/order/checkout: Deduct stock and create an order
-exports.checkout = async (req, res) => {
+export const checkout = async (req, res) => {
   try {
     const { username, salecode: input } = req.body;
 
-    console.log('Checkout attempt:', { username, input });
+    console.log('🚀 Checkout attempt:', { username, input });
 
     if (!username || !input || typeof username !== 'string' || typeof input !== 'string') {
       return sendError(res, "Invalid input data: username and salecode are required strings", 400);
@@ -91,20 +91,20 @@ exports.checkout = async (req, res) => {
       return sendError(res, "Invalid salecode format. Expected 'CODE' or 'CODE=QUANTITY'", 400);
     }
 
-    console.log('Processing order for:', { productCode, quantity });
+    console.log('📦 Processing order for:', { productCode, quantity });
 
     // Search product in MongoDB
     const product = await Product.findOne({ salecode: productCode });
 
     // If not found
     if (!product) {
-      console.log('Product not found:', productCode);
+      console.log('❌ Product not found:', productCode);
       return sendError(res, "Product not found", 404);
     }
 
     // If stock is low
     if (product.quantity < quantity) {
-      console.log('Insufficient stock:', { available: product.quantity, requested: quantity });
+      console.log('⚠️ Insufficient stock:', { available: product.quantity, requested: quantity });
       return sendError(res, "Insufficient stock", 400);
     }
 
@@ -112,7 +112,7 @@ exports.checkout = async (req, res) => {
     const totalPrice = product.price * quantity;
     product.quantity -= quantity;
     
-    console.log('Updating product stock...');
+    console.log('📝 Updating product stock...');
     await product.save();
 
     // Save the Order
@@ -125,19 +125,19 @@ exports.checkout = async (req, res) => {
       status: 'pending'
     });
     
-    console.log('Saving new order...');
+    console.log('💾 Saving new order...');
     await newOrder.save();
 
-    console.log('Order completed successfully:', newOrder._id);
+    console.log('✅ Order completed successfully:', newOrder._id);
     return sendSuccess(res, newOrder, "Order success", 201);
   } catch (err) {
-    console.error('Checkout error:', err);
+    console.error('❌ Checkout error:', err);
     return sendError(res, err.message, 500);
   }
 };
 
 // GET /api/orders: List all orders with optional username filter
-exports.getOrders = async (req, res) => {
+export const getOrders = async (req, res) => {
   try {
     const { username } = req.query;
     let query = {};
@@ -157,7 +157,7 @@ exports.getOrders = async (req, res) => {
 };
 
 // PATCH /api/products/:id/adjust-stock: Add or subtract stock manually
-exports.adjustStock = async (req, res) => {
+export const adjustStock = async (req, res) => {
   try {
     const { id } = req.params;
     const { adjustmentValue } = req.body;
@@ -188,7 +188,7 @@ exports.adjustStock = async (req, res) => {
 };
 
 // PATCH /api/products/:id: Update product details
-exports.updateProduct = async (req, res) => {
+export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price, description, salecode, category } = req.body;
@@ -218,7 +218,7 @@ exports.updateProduct = async (req, res) => {
 };
 
 // DELETE /api/products/:id: Remove a product
-exports.deleteProduct = async (req, res) => {
+export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
