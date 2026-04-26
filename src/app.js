@@ -4,6 +4,7 @@ const productRoutes = require('./routes/product.routes');
 const orderRoutes = require('./routes/order.routes');
 const errorHandler = require('./middlewares/errorHandler.middleware');
 const AppError = require('./errors/AppError');
+const connectDB = require('./config/db.config');
 
 const app = express();
 
@@ -11,6 +12,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+ 
+// Ensure Database Connection
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('DB Connection Middleware Error:', err);
+    next(new AppError('Database connection failed', 500));
+  }
+});
 
 // Request Logger
 app.use((req, res, next) => {
