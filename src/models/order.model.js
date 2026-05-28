@@ -51,7 +51,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['cash-on-delivery', 'bank-transfer', 'kpay', 'wavepay'],
+    enum: ['cash-on-delivery', 'cash-down', 'bank-transfer', 'kpay', 'wavepay'],
     default: 'cash-on-delivery'
   },
   totalAmount: {
