@@ -7,9 +7,9 @@ const { uploadToR2 } = require('../services/r2.service');
 exports.createProduct = async (req, res) => {
   try {
 
-    const { name, price, description, quantity, salecode, category } = req.body;
+    const { name, price, description, quantity, productCode, category } = req.body;
     
-    let productData = { name, price, description, quantity, salecode, category };
+    let productData = { name, price, description, quantity, productCode, category };
 
     if (req.file) {
       const imageUrl = await uploadToR2(req.file);
@@ -86,20 +86,20 @@ exports.adjustStock = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, description, salecode, category } = req.body;
+    const { name, price, description, productCode, category } = req.body;
 
-    let updateData = { name, price, description, salecode, category };
+    let updateData = { name, price, description, productCode, category };
 
     if (req.file) {
       const imageUrl = await uploadToR2(req.file);
       updateData.imageUrl = imageUrl;
     }
 
-    // Check if salecode is being changed and if it's already in use by another product
-    if (salecode) {
-      const existingProduct = await Product.findOne({ salecode, _id: { $ne: id } });
+    // Check if productCode is being changed and if it's already in use by another product
+    if (productCode) {
+      const existingProduct = await Product.findOne({ productCode, _id: { $ne: id } });
       if (existingProduct) {
-        return sendError(res, "Salecode already in use by another product", 400);
+        return sendError(res, "ProductCode already in use by another product", 400);
       }
     }
 
