@@ -28,7 +28,12 @@ exports.createProduct = async (req, res) => {
 // GET /api/products: List all products
 exports.getProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const { category } = req.query;
+    let query = {};
+    if (category) {
+      query.category = category;
+    }
+    const products = await Product.find(query);
     return sendSuccess(res, products);
   } catch (err) {
     return sendError(res, err.message, 500);
