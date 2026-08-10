@@ -1,3 +1,7 @@
+const dns = require("dns");
+if (process.env.NODE_ENV !== "production") {
+  dns.setServers(["1.1.1.1", "8.8.8.8"]);
+}
 const express = require('express');
 const cors = require('cors');
 const productRoutes = require('./routes/product.routes');
@@ -12,7 +16,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
- 
+
 // Ensure Database Connection
 app.use(async (req, res, next) => {
   try {

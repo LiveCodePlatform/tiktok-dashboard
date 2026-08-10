@@ -141,3 +141,36 @@ exports.deleteProduct = async (req, res) => {
     return sendError(res, err.message, 500);
   }
 };
+
+// GET /api/products/categories: Retrieve all unique product categories
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Product.distinct('category');
+    // Filter out null or empty string categories
+    const filteredCategories = categories.filter(c => c && c.trim() !== '');
+    return sendSuccess(res, filteredCategories, 'Categories retrieved successfully');
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+
+// GET /api/products/search: Search products by name or productCode
+exports.searchProducts = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return sendError(res, "Search query 'q' is required", 400);
+    }
+
+    const products = await Product.find({
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { productCode: { $regex: q, $options: 'i' } }
+      ]
+    });
+
+    return sendSuccess(res, products, 'Products retrieved successfully');
+  } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};

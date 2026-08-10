@@ -66,8 +66,8 @@ exports.createOrder = async (req, res) => {
 
     // Validate each product entry
     for (const item of products) {
-      if (!item.stockId || !item.quantity) {
-        return sendError(res, 'Each product must have stockId and quantity', 400);
+      if (!item.productCode || !item.quantity) {
+        return sendError(res, 'Each product must have productCode and quantity', 400);
       }
       if (typeof item.quantity !== 'number' || item.quantity <= 0) {
         return sendError(res, 'Quantity must be a positive number', 400);
@@ -79,10 +79,10 @@ exports.createOrder = async (req, res) => {
     let totalAmount = 0;
 
     for (const item of products) {
-      const product = await Product.findById(item.stockId);
+      const product = await Product.findOne({ productCode: item.productCode });
 
       if (!product) {
-        return sendError(res, `Product not found with id: ${item.stockId}`, 404);
+        return sendError(res, `Product not found with code: ${item.productCode}`, 404);
       }
 
       if (product.quantity < item.quantity) {

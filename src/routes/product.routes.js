@@ -9,6 +9,12 @@ router.post('/products', upload.single('image'), productController.createProduct
 // GET /api/products: List all products
 router.get('/products', productController.getProducts);
 
+// GET /api/products/categories: List all unique categories
+router.get('/products/categories', productController.getCategories);
+
+// GET /api/products/search: Search products by name or productCode
+router.get('/products/search', productController.searchProducts);
+
 // GET /api/products/:id: Get product details by ID
 router.get('/products/:id', productController.getProductById);
 
