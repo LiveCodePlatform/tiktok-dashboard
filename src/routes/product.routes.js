@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/product.controller');
 const upload = require('../middlewares/upload.middleware');
+const excelUpload = require('../middlewares/excelUpload.middleware');
+
+// POST /api/products/import-excel: Bulk import products from Excel or CSV
+router.post('/products/import-excel', excelUpload.single('file'), productController.importProductsFromExcel);
 
 // POST /api/products: Add a new product (with optional image)
 router.post('/products', upload.single('image'), productController.createProduct);

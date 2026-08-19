@@ -2,6 +2,7 @@ const Product = require('../models/product.model');
 const Order = require('../models/order.model');
 const { sendSuccess, sendError } = require('../utils/response.util');
 const { uploadToR2 } = require('../services/r2.service');
+const { processExcelImport } = require('../services/excel.service');
 
 // POST /api/products: Add a new product
 exports.createProduct = async (req, res) => {
@@ -178,4 +179,23 @@ exports.searchProducts = async (req, res) => {
   } catch (err) {
     return sendError(res, err.message, 500);
   }
-};
+};
+
+// POST /api/products/import-excel: Bulk import products from Excel (.xlsx, .xls, .csv)
+exports.importProductsFromExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      return sendError(res, 'Please upload an Excel or CSV file (field name: "file")', 400);
+    }
+
+    const mode = req.query.mode || req.body.mode || 'upsert';
+    const result = await processExcelImport(req.file.buffer, { mode });
+
+    const message = `Excel import processed: ${result.createdCount} created, ${result.updatedCount} updated, ${result.failedCount} failed`;
+    return sendSuccess(res, result, message, 200);
+  } catch (err) {
+    console.error('Excel Import Error:', err);
+    return sendError(res, err.message, err.statusCode || 500);
+  }
+};
+
