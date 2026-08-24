@@ -12,11 +12,37 @@ exports.checkOrder = async (req, res) => {
       return sendError(res, 'Product not found', 404);
     }
 
-    if (product.quantity <= 0) {
-      return sendSuccess(res, { message: 'Out of stock', product }, 'Item is currently unavailable');
+    let recommendations = [];
+    let recommendationType = 'none';
+
+    if (product.sellingMethod === 'upsell') {
+      const upsellItem = await Product.findOne({
+        category: product.category,
+        price: { $gt: product.price },
+        quantity: { $gt: 0 },
+        _id: { $ne: product._id }
+      }).sort({ price: 1 });
+      if (upsellItem) {
+        recommendations = [upsellItem];
+        recommendationType = 'upsell';
+      }
+    } else if (product.sellingMethod === 'cross-sell' && product.crossSellCategory) {
+      const crossSellItems = await Product.find({
+        category: product.crossSellCategory,
+        quantity: { $gt: 0 },
+        _id: { $ne: product._id }
+      }).limit(3);
+      if (crossSellItems.length > 0) {
+        recommendations = crossSellItems;
+        recommendationType = 'cross-sell';
+      }
     }
 
-    return sendSuccess(res, { message: 'In stock', product }, 'Item is available');
+    if (product.quantity <= 0) {
+      return sendSuccess(res, { message: 'Out of stock', product, recommendationType, recommendations }, 'Item is currently unavailable');
+    }
+
+    return sendSuccess(res, { message: 'In stock', product, recommendationType, recommendations }, 'Item is available');
   } catch (err) {
     return sendError(res, err.message, 500);
   }

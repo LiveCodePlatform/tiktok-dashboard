@@ -7,7 +7,9 @@ const productSchema = new mongoose.Schema({
   quantity: { type: Number, required: true, default: 0 },
   productCode: { type: String, unique: true, required: true },
   category: { type: String },
-  imageUrl: { type: String }
+  imageUrl: { type: String },
+  sellingMethod: { type: String, enum: ['none', 'upsell', 'cross-sell'], default: 'none' },
+  crossSellCategory: { type: String }
 });
 
 const Product = mongoose.model('Product', productSchema);

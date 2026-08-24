@@ -8,9 +8,9 @@ const { processExcelImport } = require('../services/excel.service');
 exports.createProduct = async (req, res) => {
   try {
 
-    const { name, price, description, quantity, productCode, category } = req.body;
+    const { name, price, description, quantity, productCode, category, sellingMethod, crossSellCategory } = req.body;
     
-    let productData = { name, price, description, quantity, productCode, category };
+    let productData = { name, price, description, quantity, productCode, category, sellingMethod, crossSellCategory };
 
     if (req.file) {
       const imageUrl = await uploadToR2(req.file);
@@ -92,9 +92,9 @@ exports.adjustStock = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, description, productCode, category } = req.body;
+    const { name, price, description, productCode, category, sellingMethod, crossSellCategory } = req.body;
 
-    let updateData = { name, price, description, productCode, category };
+    let updateData = { name, price, description, productCode, category, sellingMethod, crossSellCategory };
 
     if (req.file) {
       const imageUrl = await uploadToR2(req.file);
