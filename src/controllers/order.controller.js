@@ -248,3 +248,125 @@ exports.bulkDeleteOrders = async (req, res) => {
   }
 };
 
+const ALLOWED_STATUSES = ['pending', 'completed', 'cancelled'];
+
+// PATCH /api/orders/:id/status: Update single order status
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !ALLOWED_STATUSES.includes(status)) {
+      return sendError(res, `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(', ')}`, 400);
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return sendError(res, 'Order not found', 404);
+    }
+
+    const previousStatus = order.status;
+
+    // Handle stock changes when cancelling or reactivating
+    if (previousStatus !== status) {
+      if (status === 'cancelled' && previousStatus !== 'cancelled') {
+        // Restore stock
+        if (Array.isArray(order.items)) {
+          for (const item of order.items) {
+            if (item.product) {
+              await Product.findByIdAndUpdate(item.product, {
+                $inc: { quantity: item.quantity }
+              });
+            }
+          }
+        }
+      } else if (previousStatus === 'cancelled' && status !== 'cancelled') {
+        // Re-deduct stock
+        if (Array.isArray(order.items)) {
+          for (const item of order.items) {
+            if (item.product) {
+              await Product.findByIdAndUpdate(item.product, {
+                $inc: { quantity: -item.quantity }
+              });
+            }
+          }
+        }
+      }
+
+      order.status = status;
+      await order.save();
+    }
+
+    const updatedOrder = await Order.findById(id).populate('items.product');
+    return sendSuccess(res, updatedOrder, `Order status updated to "${status}" successfully`);
+  } catch (err) {
+    console.error('Update Order Status Error:', err);
+    return sendError(res, err.message, 500);
+  }
+};
+
+// POST /api/orders/bulk-status: Update multiple orders status
+exports.bulkUpdateOrderStatus = async (req, res) => {
+  try {
+    const { ids, status } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendError(res, 'Please provide an array of order IDs', 400);
+    }
+
+    if (!status || !ALLOWED_STATUSES.includes(status)) {
+      return sendError(res, `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(', ')}`, 400);
+    }
+
+    const orders = await Order.find({ _id: { $in: ids } });
+    if (orders.length === 0) {
+      return sendError(res, 'No matching orders found to update', 404);
+    }
+
+    // Handle stock adjustments for status changes
+    for (const order of orders) {
+      const previousStatus = order.status;
+      if (previousStatus !== status) {
+        if (status === 'cancelled' && previousStatus !== 'cancelled') {
+          // Restore stock
+          if (Array.isArray(order.items)) {
+            for (const item of order.items) {
+              if (item.product) {
+                await Product.findByIdAndUpdate(item.product, {
+                  $inc: { quantity: item.quantity }
+                });
+              }
+            }
+          }
+        } else if (previousStatus === 'cancelled' && status !== 'cancelled') {
+          // Re-deduct stock
+          if (Array.isArray(order.items)) {
+            for (const item of order.items) {
+              if (item.product) {
+                await Product.findByIdAndUpdate(item.product, {
+                  $inc: { quantity: -item.quantity }
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Update all matching orders
+    const updateResult = await Order.updateMany(
+      { _id: { $in: ids } },
+      { $set: { status } }
+    );
+
+    return sendSuccess(res, {
+      updatedCount: updateResult.modifiedCount,
+      updatedIds: ids,
+      status
+    }, `Successfully updated ${updateResult.modifiedCount} order(s) to "${status}"`);
+  } catch (err) {
+    console.error('Bulk Update Order Status Error:', err);
+    return sendError(res, err.message, 500);
+  }
+};
+

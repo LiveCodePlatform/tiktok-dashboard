@@ -17,6 +17,12 @@ router.get('/orders', orderController.getOrders);
 // POST /api/orders/bulk-delete: Bulk delete orders
 router.post('/orders/bulk-delete', orderController.bulkDeleteOrders);
 
+// POST /api/orders/bulk-status: Bulk update order status
+router.post('/orders/bulk-status', orderController.bulkUpdateOrderStatus);
+
+// PATCH /api/orders/:id/status: Update single order status
+router.patch('/orders/:id/status', orderController.updateOrderStatus);
+
 // DELETE /api/orders/:id: Delete an order
 router.delete('/orders/:id', orderController.deleteOrder);
 
