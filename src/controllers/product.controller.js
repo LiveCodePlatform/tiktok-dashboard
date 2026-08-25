@@ -131,7 +131,7 @@ exports.deleteProduct = async (req, res) => {
     const { id } = req.params;
 
     // Check if there are any existing Orders associated with this product
-    const ordersCount = await Order.countDocuments({ product: id });
+    const ordersCount = await Order.countDocuments({ 'items.product': id });
     if (ordersCount > 0) {
       return sendError(res, `Cannot delete product. It has ${ordersCount} associated orders.`, 400);
     }
@@ -144,6 +144,52 @@ exports.deleteProduct = async (req, res) => {
 
     return sendSuccess(res, null, 'Product deleted successfully');
   } catch (err) {
+    return sendError(res, err.message, 500);
+  }
+};
+
+// POST /api/products/bulk-delete: Remove multiple products
+exports.bulkDeleteProducts = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendError(res, 'Please provide an array of product IDs to delete', 400);
+    }
+
+    // Check which products are referenced in orders
+    const ordersWithProducts = await Order.find({ 'items.product': { $in: ids } }).select('items.product');
+    const blockedIds = new Set();
+    ordersWithProducts.forEach(order => {
+      if (Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          if (item.product && ids.includes(item.product.toString())) {
+            blockedIds.add(item.product.toString());
+          }
+        });
+      }
+    });
+
+    const deletableIds = ids.filter(id => !blockedIds.has(id.toString()));
+
+    if (deletableIds.length === 0) {
+      return sendError(
+        res,
+        `Cannot delete selected products. All ${ids.length} product(s) have associated orders.`,
+        400
+      );
+    }
+
+    const deleteResult = await Product.deleteMany({ _id: { $in: deletableIds } });
+
+    return sendSuccess(res, {
+      deletedCount: deleteResult.deletedCount,
+      blockedCount: blockedIds.size,
+      deletedIds: deletableIds,
+      blockedIds: Array.from(blockedIds)
+    }, `Successfully deleted ${deleteResult.deletedCount} product(s)${blockedIds.size > 0 ? `. ${blockedIds.size} product(s) could not be deleted due to associated orders.` : ''}`);
+  } catch (err) {
+    console.error('Bulk Delete Error:', err);
     return sendError(res, err.message, 500);
   }
 };

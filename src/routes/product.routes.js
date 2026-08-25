@@ -28,6 +28,9 @@ router.patch('/products/:id/adjust-stock', productController.adjustStock);
 // PATCH /api/products/:id: Update product details (with optional image)
 router.patch('/products/:id', upload.single('image'), productController.updateProduct);
 
+// POST /api/products/bulk-delete: Bulk delete products
+router.post('/products/bulk-delete', productController.bulkDeleteProducts);
+
 // DELETE /api/products/:id: Remove a product
 router.delete('/products/:id', productController.deleteProduct);
 
