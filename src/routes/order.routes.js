@@ -14,4 +14,10 @@ router.post('/orders', orderController.createOrder);
 // GET /api/orders: List all orders with optional filters
 router.get('/orders', orderController.getOrders);
 
+// POST /api/orders/bulk-delete: Bulk delete orders
+router.post('/orders/bulk-delete', orderController.bulkDeleteOrders);
+
+// DELETE /api/orders/:id: Delete an order
+router.delete('/orders/:id', orderController.deleteOrder);
+
 module.exports = router;

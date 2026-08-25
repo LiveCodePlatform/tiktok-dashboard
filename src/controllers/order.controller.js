@@ -175,3 +175,76 @@ exports.getOrders = async (req, res) => {
     return sendError(res, err.message, 500);
   }
 };
+
+// DELETE /api/orders/:id: Remove an order and restore stock
+exports.deleteOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return sendError(res, 'Order not found', 404);
+    }
+
+    // Restore stock for items in the order
+    if (Array.isArray(order.items)) {
+      for (const item of order.items) {
+        if (item.product) {
+          await Product.findByIdAndUpdate(item.product, {
+            $inc: { quantity: item.quantity }
+          });
+        }
+      }
+    }
+
+    await Order.findByIdAndDelete(id);
+
+    return sendSuccess(res, null, 'Order deleted successfully and stock restored');
+  } catch (err) {
+    console.error('Delete Order Error:', err);
+    return sendError(res, err.message, 500);
+  }
+};
+
+// POST /api/orders/bulk-delete: Remove multiple orders and restore stock
+exports.bulkDeleteOrders = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendError(res, 'Please provide an array of order IDs to delete', 400);
+    }
+
+    // Find all matching orders
+    const orders = await Order.find({ _id: { $in: ids } });
+
+    if (orders.length === 0) {
+      return sendError(res, 'No matching orders found to delete', 404);
+    }
+
+    // Restore product stock for each order's items
+    for (const order of orders) {
+      if (Array.isArray(order.items)) {
+        for (const item of order.items) {
+          if (item.product) {
+            await Product.findByIdAndUpdate(item.product, {
+              $inc: { quantity: item.quantity }
+            });
+          }
+        }
+      }
+    }
+
+    // Delete the orders
+    const deleteResult = await Order.deleteMany({ _id: { $in: ids } });
+
+    return sendSuccess(res, {
+      deletedCount: deleteResult.deletedCount,
+      deletedIds: ids
+    }, `Successfully deleted ${deleteResult.deletedCount} order(s) and restored stock`);
+  } catch (err) {
+    console.error('Bulk Delete Orders Error:', err);
+    return sendError(res, err.message, 500);
+  }
+};
+
